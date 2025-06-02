@@ -1,4 +1,4 @@
-package templates
+package main
 
 import "github.com/gorilla/websocket"
 
@@ -8,17 +8,19 @@ type client struct {
 	// a socket is the web socket for this uer
 	socket *websocket.Conn
 
-	//receiver is a channel to receive messages from other clients
+	//receive is a channel to receive messages from other clients
 	receive chan []byte
 
 	//room is the room this client is chatting in
 	room *room
 }
 
+
+// Used to send messages
 func (c *client) read() {
 	// close the connection when we are done
 	defer c.socket.Close()
-	// endlessly read messages
+	// endlessly read messages from input
 	for {
 		_, msg, err := c.socket.ReadMessage()
 		// break if there is an error

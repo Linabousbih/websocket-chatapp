@@ -1,7 +1,6 @@
 package main
 
 import (
-	"chatapp/templates"
 	"log"
 	"net/http"
 
@@ -29,7 +28,7 @@ func newRoom() *room{
 		forward: make(chan []byte), 
 		join: make(chan *client),
 		leave: make(chan *client),
-		clients: make(map[*client]bool)
+		clients: make(map[*client]bool),
 	}
 }
 
@@ -42,7 +41,7 @@ func (r * room) run(){
 			delete(r.clients,client)
 			close(client.receive)
 		case msg :=<- r.forward:
-			for client := range r.client{
+			for client := range r.clients{
 				client.receive <-msg
 			}
 		}
@@ -56,8 +55,8 @@ const (
 
 var upgrader = &websocket.Upgrader{ReadBufferSize: socketBufferSize, WriteBufferSize: socketBufferSize}
 
-func (r *room) ServerHTTP(w http.ResponseWriter, req http.Request){
-	socket,err:=upgrader.Upgrade(w,req)
+func (r *room) ServeHTTP(w http.ResponseWriter, req *http.Request){
+	socket,err:=upgrader.Upgrade(w,req,nil)
 	if err!=nil{
 		log.Fatal("ServerHTTP:",err)
 		return
@@ -65,8 +64,8 @@ func (r *room) ServerHTTP(w http.ResponseWriter, req http.Request){
 
 	client:=&client{
 		socket: socket,
-		receiver: make(chan[]byte, messageBufferSize),
-		room: r
+		receive: make(chan[]byte, messageBufferSize),
+		room: r,
 	}
 
 	r.join<-client
