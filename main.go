@@ -29,16 +29,21 @@ func main() {
 	var addr = flag.String("addr", ":8080", "Addr of the App")
 	flag.Parse()
 
-	r := newRoom()
+	http.Handle("/", &templateHandler{filename: "index.html"})
+	http.Handle("/chat", &templateHandler{filename: "chat.html"})
 
-	http.Handle("/", &templateHandler{filename: "chat.html"})
-	http.Handle("/room", r)
+	// Handle all websocket connections for chat rooms dynamically
+	http.HandleFunc("/room", func(w http.ResponseWriter, r *http.Request) {
+		roomName := r.URL.Query().Get("room")
+		if roomName == "" {
+			http.Error(w, "Room name required", http.StatusBadRequest)
+			return
+		}
+		realRoom := getRoom(roomName)
+		realRoom.ServeHTTP(w, r)
+	})
 
-	go r.run()
-
-	//start the web server
 	log.Println("starting webserver on ", *addr)
-
 	if err := http.ListenAndServe(*addr, nil); err != nil {
 		log.Fatal("ListenAndServe:", err)
 	}
