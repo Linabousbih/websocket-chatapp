@@ -1,6 +1,11 @@
 package main
 
-import "github.com/gorilla/websocket"
+import (
+	"encoding/json"
+	"fmt"
+
+	"github.com/gorilla/websocket"
+)
 
 // client represents a single chatting user
 type client struct {
@@ -13,8 +18,9 @@ type client struct {
 
 	//room is the room this client is chatting in
 	room *room
-}
 
+	name string
+}
 
 // Used to send messages
 func (c *client) read() {
@@ -27,8 +33,20 @@ func (c *client) read() {
 		if err != nil {
 			return
 		}
+
+		outgoing := map[string]string{
+			"name":    c.name,
+			"message": string(msg),
+		}
+
+		jsMessage, err := json.Marshal(outgoing)
+		if err != nil {
+			fmt.Println("Enconding failed!")
+			continue
+		}
+
 		// forward the message to the room
-		c.room.forward <- msg
+		c.room.forward <- jsMessage
 	}
 }
 

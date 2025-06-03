@@ -1,7 +1,9 @@
 package main
 
 import (
+	"fmt"
 	"log"
+	"math/rand"
 	"net/http"
 	"sync"
 
@@ -90,6 +92,7 @@ func (r *room) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		socket:  socket,
 		receive: make(chan []byte, messageBufferSize),
 		room:    realRoom,
+		name:    fmt.Sprintf("user_%d", rand.Intn(1000)),
 	}
 
 	realRoom.join <- client

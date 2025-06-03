@@ -9,11 +9,18 @@ if (!room) {
 const socket = new WebSocket(`ws://${location.host}/room?room=${room}`);
 
 socket.onmessage = (event) => {
-  const msg = document.createElement("div");
-  msg.textContent = event.data;
-  document.getElementById("messages").appendChild(msg);
-  const messagesDiv = document.getElementById("messages");
-  messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  try {
+    const data = JSON.parse(event.data); // parse JSON string into object
+    const msg = document.createElement("div");
+    msg.textContent = `${data.name}: ${data.message}`;  // show nicely formatted message
+    document.getElementById("messages").appendChild(msg);
+
+    // Auto-scroll
+    const messagesDiv = document.getElementById("messages");
+    messagesDiv.scrollTop = messagesDiv.scrollHeight;
+  } catch (err) {
+    console.error("Invalid JSON received:", event.data);
+  }
 };
 
 function sendMessage() {

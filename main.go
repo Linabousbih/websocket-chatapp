@@ -3,10 +3,12 @@ package main
 import (
 	"flag"
 	"log"
+	"math/rand"
 	"net/http"
 	"path/filepath"
 	"sync"
 	"text/template"
+	"time"
 )
 
 type templateHandler struct {
@@ -26,6 +28,8 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	// makes every randomly generated number unique
+	rand.Seed(time.Now().UnixNano())
 	var addr = flag.String("addr", ":8080", "Addr of the App")
 	flag.Parse()
 
