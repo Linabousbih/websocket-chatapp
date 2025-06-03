@@ -1,16 +1,18 @@
-<!-- templates/index.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <title>Select a Channel</title>
+  <meta charset="UTF-8" />
+  <title>Select a Chat Room</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
 </head>
-<body>
-  <h1>Choose a Channel</h1>
+<body class="index-body">
+  <h1>Join a Chat Room</h1>
   <form action="/chat" method="get">
-    <label for="room">Enter Channel Name:</label>
-    <input type="text" id="room" name="room" required>
+    <input type="text" name="room" placeholder="Enter channel name..." required />
     <button type="submit">Join</button>
   </form>
+
+  <!-- Optional: index.js if you want any client JS here -->
+  <script src="/static/js/index.js"></script>
 </body>
 </html>

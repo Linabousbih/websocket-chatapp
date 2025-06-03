@@ -1,32 +1,19 @@
-<!-- templates/chat.html -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Chat</title>
+  <title>Chat Room</title>
+  <link rel="stylesheet" href="/static/css/styles.css" />
 </head>
-<body>
-  <h1>Chat Room</h1>
+<body class="chat-body">
+  <header>Chat Room</header>
   <div id="messages"></div>
-  <input id="msg" type="text" placeholder="Type a message...">
-  <button onclick="sendMessage()">Send</button>
 
-  <script>
-    const params = new URLSearchParams(window.location.search);
-    const room = params.get("room");
-    const socket = new WebSocket(`ws://${location.host}/room?room=${room}`);
+  <div class="chat-input">
+    <input id="msg" type="text" placeholder="Type a message..." />
+    <button id="sendBtn">Send</button>
+  </div>
 
-    socket.onmessage = (event) => {
-      const msg = document.createElement("div");
-      msg.textContent = event.data;
-      document.getElementById("messages").appendChild(msg);
-    };
-
-    function sendMessage() {
-      const input = document.getElementById("msg");
-      socket.send(input.value);
-      input.value = "";
-    }
-  </script>
+  <script src="/static/js/chat.js"></script>
 </body>
 </html>

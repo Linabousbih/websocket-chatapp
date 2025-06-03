@@ -29,6 +29,7 @@ func main() {
 	var addr = flag.String("addr", ":8080", "Addr of the App")
 	flag.Parse()
 
+	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
 	http.Handle("/", &templateHandler{filename: "index.html"})
 	http.Handle("/chat", &templateHandler{filename: "chat.html"})
 
