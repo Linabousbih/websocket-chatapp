@@ -15,22 +15,69 @@
   </div>
 
   <script>
-  const token = localStorage.getItem("token");
-  if (!token) {
-    window.location.href = "/signup";
-  }
-
-  const params = new URLSearchParams(window.location.search);
-  if (!params.get("token")) {
+    const params = new URLSearchParams(window.location.search);
     const room = params.get("room");
+    const token = params.get("token") || localStorage.getItem("token");
+
     if (!room) {
-      alert("No room specified.");
+      alert("No room specified. Redirecting to homepage...");
       window.location.href = "/";
     }
-    window.location.href = `/chat?room=${room}&token=${encodeURIComponent(token)}`;
-  }
-</script>
 
-  <script src="/static/js/chat.js"></script>
+    if (!token) {
+      alert("No token found. Please log in.");
+      window.location.href = "/login";
+    }
+
+    // 🔁 Add token to URL if not present
+    if (!params.get("token")) {
+      const newUrl = `${window.location.pathname}?room=${encodeURIComponent(room)}&token=${encodeURIComponent(token)}`;
+      window.history.replaceState({}, '', newUrl);
+    }
+
+    // ✅ Establish WebSocket connection
+    const socket = new WebSocket(`ws://${location.host}/room?room=${room}&token=${token}`);
+
+    const input = document.getElementById("msg");
+    const sendBtn = document.getElementById("sendBtn");
+    const messagesDiv = document.getElementById("messages");
+
+    socket.addEventListener("open", () => {
+      console.log("✅ WebSocket connected");
+    });
+
+socket.addEventListener("message", (event) => {
+  try {
+    const data = JSON.parse(event.data); // parse the JSON
+
+    const msg = document.createElement("div");
+    msg.textContent = `${data.name}: ${data.message}`; // nice format
+    messagesDiv.appendChild(msg);
+  } catch (e) {
+    console.error("Failed to parse message", e);
+  }
+});
+
+
+    socket.addEventListener("close", () => {
+      console.log("🔌 WebSocket disconnected");
+    });
+
+    socket.addEventListener("error", (e) => {
+      console.error("❌ WebSocket error", e);
+    });
+
+    function sendMessage() {
+      const text = input.value.trim();
+      if (!text || socket.readyState !== WebSocket.OPEN) return;
+      socket.send(text);
+      input.value = "";
+    }
+
+    sendBtn.addEventListener("click", sendMessage);
+    input.addEventListener("keyup", (e) => {
+      if (e.key === "Enter") sendMessage();
+    });
+  </script>
 </body>
 </html>

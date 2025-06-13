@@ -28,13 +28,11 @@ func Signup() gin.HandlerFunc {
 			return
 		}
 
-		// Validate user input using validator package
 		if err := validate.Struct(user); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
 
-		// Check if email already exists
 		count, err := userCollection.CountDocuments(ctx, bson.M{"email": user.Email})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
@@ -45,7 +43,6 @@ func Signup() gin.HandlerFunc {
 			return
 		}
 
-		// Hash password
 		hashedPassword, err := HashPassword(user.Password)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error hashing password"})
@@ -53,15 +50,14 @@ func Signup() gin.HandlerFunc {
 		}
 		user.Password = hashedPassword
 
-		// Set timestamps and IDs
 		now := time.Now()
 		user.Created_at = now
 		user.Updated_at = now
 		user.ID = primitive.NewObjectID()
 		user.User_id = user.ID.Hex()
 
-		// Generate tokens - note you only have email and user_id now
-		accessToken, refreshToken, err := GenerateTokens(*user.Email, user.User_id)
+		// *** Pass username to GenerateTokens ***
+		accessToken, refreshToken, err := GenerateTokens(*user.Email, user.User_id, *user.Username)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating tokens"})
 			return
@@ -98,15 +94,14 @@ func Login() gin.HandlerFunc {
 			return
 		}
 
-		// Verify password
 		passwordValid, msg := VerifyPassword(*foundUser.Password, *inputUser.Password)
 		if !passwordValid {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": msg})
 			return
 		}
 
-		// Generate new tokens
-		token, refreshToken, err := GenerateTokens(*foundUser.Email, foundUser.User_id)
+		// *** Pass username to GenerateTokens ***
+		token, refreshToken, err := GenerateTokens(*foundUser.Email, foundUser.User_id, *foundUser.Username)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Error generating tokens"})
 			return
@@ -118,7 +113,6 @@ func Login() gin.HandlerFunc {
 			return
 		}
 
-		// Return user without password field
 		foundUser.Password = nil
 
 		c.JSON(http.StatusOK, gin.H{

@@ -1,66 +1,38 @@
-const params = new URLSearchParams(window.location.search);
-const room = params.get("room");
-const token = params.get("token");  // get token from URL query
+// Assumes `socket` is available globally
+const input = document.getElementById("msg");
+const sendBtn = document.getElementById("sendBtn");
+const messagesDiv = document.getElementById("messages");
 
-if (!room) {
-  alert("No room specified. Redirecting to homepage...");
-  window.location.href = "/";
-}
+// Wait for socket to open before sending
+socket.addEventListener("open", () => {
+  console.log("✅ WebSocket connected");
+});
 
-if (!token) {
-  alert("No token found. Please log in.");
-  window.location.href = "/login";
-}
+socket.addEventListener("message", (event) => {
+  const msg = document.createElement("div");
+  msg.textContent = event.data;
+  messagesDiv.appendChild(msg);
+});
 
-const socket = new WebSocket(`ws://${location.host}/room?room=${room}&token=${token}`);
+sendBtn.addEventListener("click", () => {
+  sendMessage();
+});
 
-
-socket.onmessage = (event) => {
-  try {
-    const data = JSON.parse(event.data);
-
-    // Create the container div
-    const msgContainer = document.createElement("div");
-    msgContainer.classList.add("message-container");
-
-    // Create the username div
-    const usernameDiv = document.createElement("div");
-    usernameDiv.classList.add("username");
-    usernameDiv.textContent = data.name;
-
-    // Create the message div
-    const messageDiv = document.createElement("div");
-    messageDiv.classList.add("message");
-    messageDiv.textContent = data.message;
-
-    // Append username and message in correct order
-    msgContainer.appendChild(usernameDiv);
-    msgContainer.appendChild(messageDiv);
-
-    // Append the whole message container to the messages div
-    document.getElementById("messages").appendChild(msgContainer);
-
-    // Auto-scroll
-    const messagesDiv = document.getElementById("messages");
-    messagesDiv.scrollTop = messagesDiv.scrollHeight;
-
-  } catch (err) {
-    console.error("Invalid JSON received:", event.data);
-  }
-};
-
-function sendMessage() {
-  const input = document.getElementById("msg");
-  if (input.value.trim() !== "") {
-    socket.send(input.value);
-    input.value = "";
-  }
-}
-
-document.getElementById("sendBtn").addEventListener("click", sendMessage);
-
-document.getElementById("msg").addEventListener("keyup", function (event) {
+input.addEventListener("keyup", (event) => {
   if (event.key === "Enter") {
     sendMessage();
   }
 });
+
+function sendMessage() {
+  if (socket.readyState !== WebSocket.OPEN) {
+    console.error("❌ Socket is not open");
+    return;
+  }
+
+  const text = input.value.trim();
+  if (text === "") return;
+
+  socket.send(text);
+  input.value = "";
+}

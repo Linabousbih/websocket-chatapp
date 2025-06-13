@@ -6,14 +6,17 @@ import (
 	"time"
 
 	"github.com/golang-jwt/jwt"
-	"golang.org/x/crypto/bcrypt"
 	"go.mongodb.org/mongo-driver/bson"
+	"golang.org/x/crypto/bcrypt"
 )
+
 type Claims struct {
-    UserID string `json:"user_id"`
-    Email  string `json:"email"`
-    jwt.StandardClaims
+	UserID   string `json:"user_id"`
+	Email    string `json:"email"`
+	Username string `json:"username"`
+	jwt.StandardClaims
 }
+
 var jwtKey []byte
 
 func SetJWTKey(key string) {
@@ -24,46 +27,47 @@ func GetJWTKey() []byte {
 	return []byte(jwtKey)
 }
 
-func GenerateTokens(email, userID string) (string, string, error) {
-    tokenExpiry := time.Now().Add(24 * time.Hour).Unix()
-    refreshTokenExpiry := time.Now().Add(7 * 24 * time.Hour).Unix()
+func GenerateTokens(email, userID, username string) (string, string, error) {
+	tokenExpiry := time.Now().Add(24 * time.Hour).Unix()
+	refreshTokenExpiry := time.Now().Add(7 * 24 * time.Hour).Unix()
 
-    claims := &Claims{
-        Email:  email,
-        UserID: userID,
-        StandardClaims: jwt.StandardClaims{
-            ExpiresAt: tokenExpiry,
-        },
-    }
+	claims := &Claims{
+		Email:    email,
+		UserID:   userID,
+		Username: username, // set username here
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: tokenExpiry,
+		},
+	}
 
-    refreshClaims := &Claims{
-        StandardClaims: jwt.StandardClaims{
-            ExpiresAt: refreshTokenExpiry,
-        },
-    }
+	refreshClaims := &Claims{
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: refreshTokenExpiry,
+		},
+	}
 
-    accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
-    signedAccessToken, err := accessToken.SignedString(jwtKey)
-    if err != nil {
-        return "", "", err
-    }
+	accessToken := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)
+	signedAccessToken, err := accessToken.SignedString(jwtKey)
+	if err != nil {
+		return "", "", err
+	}
 
-    refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
-    signedRefreshToken, err := refreshToken.SignedString(jwtKey)
-    if err != nil {
-        return "", "", err
-    }
+	refreshToken := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
+	signedRefreshToken, err := refreshToken.SignedString(jwtKey)
+	if err != nil {
+		return "", "", err
+	}
 
-    return signedAccessToken, signedRefreshToken, nil
+	return signedAccessToken, signedRefreshToken, nil
 }
 
 func HashPassword(password *string) (*string, error) {
-    bytes, err := bcrypt.GenerateFromPassword([]byte(*password), bcrypt.DefaultCost)
-    if err != nil {
-        return nil, err
-    }
-    hashedPwd := string(bytes)
-    return &hashedPwd, nil
+	bytes, err := bcrypt.GenerateFromPassword([]byte(*password), bcrypt.DefaultCost)
+	if err != nil {
+		return nil, err
+	}
+	hashedPwd := string(bytes)
+	return &hashedPwd, nil
 }
 
 func ValidateToken(tokenString string) (*Claims, error) {
