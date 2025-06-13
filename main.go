@@ -1,7 +1,8 @@
 package main
 
 import (
-	"flag"
+	"chatapp/auth"
+	"chatapp/routes"
 	"log"
 	"math/rand"
 	"net/http"
@@ -9,6 +10,8 @@ import (
 	"sync"
 	"text/template"
 	"time"
+
+	"github.com/gin-gonic/gin"
 )
 
 type templateHandler struct {
@@ -28,28 +31,54 @@ func (t *templateHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
-	// makes every randomly generated number unique
 	rand.Seed(time.Now().UnixNano())
-	var addr = flag.String("addr", ":8080", "Addr of the App")
-	flag.Parse()
 
-	http.Handle("/static/", http.StripPrefix("/static/", http.FileServer(http.Dir("static"))))
-	http.Handle("/", &templateHandler{filename: "index.html"})
-	http.Handle("/chat", &templateHandler{filename: "chat.html"})
+	// ✅ Generate and set JWT key
+	key := auth.GenerateRandomKey()
+	auth.SetJWTKey(key)
+	log.Printf("Generated JWT Key: %s\n", key)
 
-	// Handle all websocket connections for chat rooms dynamically
-	http.HandleFunc("/room", func(w http.ResponseWriter, r *http.Request) {
-		roomName := r.URL.Query().Get("room")
+	// ✅ Create a new Gin router
+	router := gin.Default()
+
+	// ✅ Serve static files
+	router.Static("/static", "./static")
+
+	// ✅ HTML routes
+
+	router.GET("/signup", func(c *gin.Context) {
+		c.HTML(200, "signup.html", nil)
+	})
+
+	router.GET("/login", func(c *gin.Context) {
+		c.HTML(200, "login.html", nil)
+	})
+
+	router.GET("/", auth.Authenticate(), func(c *gin.Context) {
+		c.HTML(200, "index.html", nil)
+	})
+
+	router.GET("/chat", auth.Authenticate(), func(c *gin.Context) {
+		c.HTML(200, "chat.html", nil)
+	})
+
+	// ✅ WebSocket endpoint
+	router.GET("/room", func(c *gin.Context) {
+		roomName := c.Query("room")
 		if roomName == "" {
-			http.Error(w, "Room name required", http.StatusBadRequest)
+			c.JSON(400, gin.H{"error": "Room name required"})
 			return
 		}
 		realRoom := getRoom(roomName)
-		realRoom.ServeHTTP(w, r)
+		realRoom.ServeHTTP(c.Writer, c.Request) // fallback to http.Handler
 	})
 
-	log.Println("starting webserver on ", *addr)
-	if err := http.ListenAndServe(*addr, nil); err != nil {
-		log.Fatal("ListenAndServe:", err)
-	}
+	// ✅ API routes (mounts /api/signup, /api/login, etc.)
+	routes.SetupRoutes(router.Group("/api"))
+
+	router.LoadHTMLGlob("templates/*.html")
+
+	// ✅ Start server
+	log.Println("Server running at http://localhost:8080")
+	router.Run(":8080")
 }

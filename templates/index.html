@@ -13,6 +13,19 @@
   </form>
 
   <!-- Optional: index.js if you want any client JS here -->
+  <script>
+const token = localStorage.getItem("token");
+const urlToken = new URLSearchParams(window.location.search).get("token");
+
+if (!token) {
+  // No token saved at all → go to login
+  window.location.href = "/login";
+} else if (!urlToken) {
+  // Add token to URL if not already present
+  window.location.href = `/?token=${encodeURIComponent(token)}`;
+}
+
+</script>
   <script src="/static/js/index.js"></script>
 </body>
 </html>

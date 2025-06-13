@@ -1,12 +1,19 @@
 const params = new URLSearchParams(window.location.search);
 const room = params.get("room");
+const token = params.get("token");  // get token from URL query
 
 if (!room) {
   alert("No room specified. Redirecting to homepage...");
   window.location.href = "/";
 }
 
-const socket = new WebSocket(`ws://${location.host}/room?room=${room}`);
+if (!token) {
+  alert("No token found. Please log in.");
+  window.location.href = "/login";
+}
+
+const socket = new WebSocket(`ws://${location.host}/room?room=${room}&token=${token}`);
+
 
 socket.onmessage = (event) => {
   try {

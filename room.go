@@ -1,9 +1,8 @@
 package main
 
 import (
-	"fmt"
+	"chatapp/auth"
 	"log"
-	"math/rand"
 	"net/http"
 	"sync"
 
@@ -72,7 +71,6 @@ func getRoom(name string) *room {
 	go r.run()
 	return r
 }
-
 func (r *room) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	roomName := req.URL.Query().Get("room")
 	if roomName == "" {
@@ -80,11 +78,25 @@ func (r *room) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		return
 	}
 
+	token := req.URL.Query().Get("token")
+	if token == "" {
+		http.Error(w, "Missing token", http.StatusUnauthorized)
+		return
+	}
+
+	// ✅ Validate token and extract claims
+	claims, err := auth.ValidateToken(token)
+	if err != nil {
+		http.Error(w, "Invalid token", http.StatusUnauthorized)
+		return
+	}
+	username := claims.Email // or claims.UserID if you prefer
+
 	realRoom := getRoom(roomName)
 
 	socket, err := upgrader.Upgrade(w, req, nil)
 	if err != nil {
-		log.Println("Upgrade error:", err)
+		log.Println("WebSocket upgrade error:", err)
 		return
 	}
 
@@ -92,7 +104,7 @@ func (r *room) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 		socket:  socket,
 		receive: make(chan []byte, messageBufferSize),
 		room:    realRoom,
-		name:    fmt.Sprintf("user_%d", rand.Intn(1000)),
+		name:    username,
 	}
 
 	realRoom.join <- client
